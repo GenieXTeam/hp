@@ -437,7 +437,7 @@
   footer .foot-links a{ text-decoration:none; color:var(--text-dim); transition:color .2s ease; }
   footer .foot-links a:hover{ color:var(--text); }
 
-  /* ===== FLOATING BUBBLE ===== */
+  /* ===== FLOATING BUBBLE / MOBILE LAMP ===== */
   .float-bubble{
     position:fixed; bottom:26px; right:26px; z-index:850;
     display:inline-flex; align-items:center; gap:9px;
@@ -450,8 +450,25 @@
   }
   .float-bubble:hover{ transform:translateY(-3px) scale(1.04); }
   .float-bubble-dot{ width:7px; height:7px; border-radius:50%; background:var(--led); box-shadow:0 0 8px var(--led); animation:pulse-dot 1.8s ease-in-out infinite; }
+  .float-bubble .lamp-icon{ display:none; width:24px; height:24px; flex:none; color:#fff; }
   @keyframes bubble-float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-6px);} }
-  @media (max-width: 640px){ .float-bubble{ display:none; } }
+  @media (max-width: 640px){
+    .float-bubble{
+      width:58px; height:58px; padding:0; border-radius:50%;
+      justify-content:center; bottom:20px; right:20px;
+      animation:bubble-float 3.2s ease-in-out infinite, lamp-glow 2.4s ease-in-out infinite;
+    }
+    .float-bubble .fb-text, .float-bubble .float-bubble-dot{ display:none; }
+    .float-bubble .lamp-icon{ display:block; }
+    .float-bubble .lamp-spark{
+      position:absolute; top:2px; right:10px; width:5px; height:5px; border-radius:50%;
+      background:var(--led); box-shadow:0 0 8px var(--led); animation:pulse-dot 1.6s ease-in-out infinite;
+    }
+  }
+  @keyframes lamp-glow{
+    0%,100%{ box-shadow:0 0 0 1px rgba(255,255,255,.1) inset, 0 12px 32px -10px rgba(168,85,247,.7); }
+    50%{ box-shadow:0 0 0 1px rgba(255,255,255,.16) inset, 0 14px 40px -8px rgba(255,79,160,.85); }
+  }
   @media (prefers-reduced-motion: reduce){
     .float-bubble, .glow-orb, .eyebrow .dot, .float-bubble-dot, .scroll-cue svg{ animation:none; }
     .reveal{ transition:none; opacity:1; transform:none; }
@@ -473,6 +490,7 @@
   .hv-tile{
     position:relative; border-radius:16px; overflow:hidden; border:1px solid var(--border-strong);
     background:linear-gradient(135deg, var(--violet-deep), var(--magenta));
+    background-size:cover; background-position:center;
     display:flex; align-items:flex-end; padding:10px;
     box-shadow:0 20px 40px -20px rgba(0,0,0,.6);
     animation:tile-float 5s ease-in-out infinite;
@@ -480,17 +498,16 @@
   .hv-tile:nth-child(2n){ animation-delay:-1.4s; }
   .hv-tile:nth-child(3n){ animation-delay:-2.8s; }
   @keyframes tile-float{ 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-8px);} }
-  .hv-tile span{
-    position:relative; z-index:1; font-family:'JetBrains Mono', monospace; font-size:10.5px; color:#fff;
-    background:rgba(0,0,0,.35); padding:3px 8px; border-radius:100px; letter-spacing:.04em;
-  }
-  .hv-tile .play{
+  .hv-tile .scene-icon{
     position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.18);
-    border:1px solid rgba(255,255,255,.5); display:flex; align-items:center; justify-content:center;
-    backdrop-filter:blur(3px);
+    width:52%; height:52%; opacity:.24; color:#fff; z-index:0;
+    transition:opacity .3s ease;
   }
-  .hv-tile .play svg{ width:12px; height:12px; fill:#fff; margin-left:2px; }
+  .hv-tile.has-image .scene-icon{ opacity:0; }
+  .hv-tile.has-image::after{
+    content:''; position:absolute; inset:0; z-index:0;
+    background:linear-gradient(180deg, rgba(0,0,0,0) 55%, rgba(0,0,0,.45) 100%);
+  }
   .hv-tile.t1{ background:linear-gradient(135deg,#7c3aed,#a855f7); grid-row:span 2; }
   .hv-tile.t2{ background:linear-gradient(135deg,#ff4fa0,#ff8fc4); }
   .hv-tile.t3{ background:linear-gradient(135deg,#38f5a5,#22b98a); }
@@ -503,6 +520,118 @@
     .hero-content{ order:2; }
     .hero-visual{ order:1; transform:none; height:260px; margin:0 auto; max-width:460px; }
     .hero-ctas, .hero-meta{ justify-content:center; }
+  }
+
+  /* ===== ADMIN OVERLAY ===== */
+  .admin-overlay{
+    position:fixed; inset:0; z-index:2000; background:rgba(8,5,13,.88);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    display:none; align-items:flex-start; justify-content:center;
+    padding:60px 20px; overflow-y:auto;
+  }
+  .admin-overlay.open{ display:flex; }
+  .admin-card{
+    position:relative; width:100%; max-width:760px;
+    background:linear-gradient(180deg, var(--surface), var(--bg-soft));
+    border:1px solid var(--border-strong); border-radius:22px;
+    padding:36px 34px 42px; box-shadow:0 30px 80px -20px rgba(0,0,0,.7);
+  }
+  .admin-close{
+    position:absolute; top:16px; right:16px; width:34px; height:34px; border-radius:50%;
+    background:rgba(255,255,255,.06); border:1px solid var(--border-strong); color:var(--text);
+    font-size:20px; line-height:1; cursor:pointer;
+  }
+  .admin-close:hover{ background:rgba(255,255,255,.12); }
+  .admin-logo{ display:flex; align-items:center; gap:9px; font-family:'Space Grotesk', sans-serif; font-weight:700; font-size:18px; margin-bottom:22px; }
+  .admin-logo .mark{
+    width:26px; height:26px; border-radius:8px;
+    background:linear-gradient(135deg, var(--violet-deep), var(--magenta));
+    display:flex; align-items:center; justify-content:center; box-shadow:0 0 18px rgba(168,85,247,.55);
+  }
+  .admin-logo .mark svg{ width:14px; height:14px; }
+  .admin-logo b span{ background:linear-gradient(90deg, var(--violet), var(--magenta)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .admin-logo .badge{
+    font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--violet); background:rgba(168,116,255,.08); border:1px solid var(--border-strong);
+    padding:4px 10px; border-radius:100px; margin-left:4px;
+  }
+  #adminLogin h2, #adminPanel h2{ font-family:'Space Grotesk', sans-serif; font-size:24px; font-weight:700; margin-bottom:8px; }
+  #adminLogin p, #adminPanel > p{ color:var(--text-dim); font-size:14px; line-height:1.6; margin-bottom:20px; max-width:520px; }
+  .admin-input{
+    width:100%; background:var(--bg-soft); border:1px solid var(--border-strong); color:var(--text);
+    font-family:'JetBrains Mono', monospace; font-size:14px; padding:13px 16px; border-radius:12px;
+    margin-bottom:10px; outline:none;
+  }
+  .admin-input:focus{ border-color:var(--violet); }
+  .admin-error{ display:none; color:var(--magenta); font-size:13px; margin-bottom:6px; }
+  .admin-error.show{ display:block; }
+  .admin-note{
+    background:rgba(168,116,255,.06); border:1px solid var(--border); border-radius:12px;
+    padding:12px 16px; font-size:12.5px; color:var(--text-dim); line-height:1.6; margin-bottom:22px;
+  }
+  .admin-toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:30px; }
+  .admin-subhead{ font-family:'Space Grotesk', sans-serif; font-size:15.5px; font-weight:600; margin:26px 0 14px; }
+  .admin-video-row{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
+  .admin-video-preview{
+    position:relative; width:220px; height:130px; border-radius:14px; overflow:hidden;
+    border:1px solid var(--border-strong); background:var(--bg-soft);
+    display:flex; align-items:center; justify-content:center; flex:none;
+  }
+  .admin-video-preview video{ width:100%; height:100%; object-fit:cover; display:none; }
+  .admin-video-preview.has-video video{ display:block; }
+  .admin-video-preview.has-video .empty-hint{ display:none; }
+  .admin-video-preview .empty-hint{
+    font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-faint); text-align:center; padding:0 14px;
+  }
+  .admin-video-actions{ display:flex; flex-direction:column; gap:8px; }
+  .admin-video-actions .btn-solid, .admin-video-actions .btn-ghost{
+    font-family:'JetBrains Mono', monospace; font-weight:600; font-size:12.5px; letter-spacing:.02em;
+    padding:10px 18px; border-radius:100px; text-align:center; cursor:pointer; border:none; text-decoration:none;
+  }
+  .admin-video-actions .btn-solid{ background:linear-gradient(90deg, var(--violet-deep), var(--magenta)); color:#fff; }
+  .admin-video-actions .btn-ghost{ background:transparent; border:1px solid var(--border-strong); color:var(--text); }
+  .admin-video-actions .btn-ghost:hover{ border-color:var(--violet); }
+  .admin-video-actions .btn-ghost[disabled]{ opacity:.4; cursor:not-allowed; }
+  #adminVideoInput{ display:none; }
+
+  .admin-grid{ display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+  .admin-slot{
+    background:var(--bg-soft); border:1px solid var(--border); border-radius:14px; padding:12px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .admin-slot-head{ display:flex; align-items:center; justify-content:space-between; font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--text-faint); }
+  .admin-preview{
+    position:relative; aspect-ratio:1/1; border-radius:10px; overflow:hidden;
+    background:linear-gradient(135deg, var(--violet-deep), var(--magenta));
+    background-size:cover; background-position:center; border:1px solid var(--border-strong);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .admin-slot[data-tall="1"] .admin-preview{ aspect-ratio:1/1.5; }
+  .admin-preview .empty-hint{ font-family:'JetBrains Mono', monospace; font-size:10px; color:rgba(255,255,255,.85); background:rgba(0,0,0,.3); padding:3px 8px; border-radius:100px; }
+  .admin-preview.has-image .empty-hint{ display:none; }
+  .admin-slot-actions{ display:flex; gap:6px; }
+  .admin-slot-actions button, .admin-slot-actions label{
+    flex:1; text-align:center; font-family:'JetBrains Mono', monospace; font-weight:600; font-size:10.5px;
+    padding:8px 6px; border-radius:100px; cursor:pointer; border:none; text-decoration:none;
+  }
+  .admin-slot-actions .a-upload{ background:linear-gradient(90deg, var(--violet-deep), var(--magenta)); color:#fff; }
+  .admin-slot-actions .a-remove{ background:transparent; border:1px solid var(--border-strong); color:var(--text); }
+  .admin-slot-actions .a-remove[disabled]{ opacity:.4; cursor:not-allowed; }
+  .admin-slot input[type=file]{ display:none; }
+
+  .admin-toast{
+    position:fixed; bottom:26px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:var(--bg-soft); border:1px solid var(--border-strong); color:var(--text);
+    padding:12px 22px; border-radius:100px; font-family:'JetBrains Mono', monospace; font-size:12.5px;
+    opacity:0; transition:opacity .3s ease, transform .3s ease; pointer-events:none; z-index:2100;
+  }
+  .admin-toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  @media (max-width:640px){
+    .admin-card{ padding:28px 20px 34px; }
+    .admin-grid{ grid-template-columns:1fr 1fr; }
+    .admin-video-row{ flex-direction:column; align-items:stretch; }
+    .admin-video-preview{ width:100%; }
   }
 
   /* ===== AUDIENCE FILTERING ===== */
@@ -603,6 +732,38 @@
     .gate-options{ grid-template-columns:1fr; }
     .gate-option{ padding:26px 22px; }
   }
+
+  /* ===== GATE SELECTION TRANSITION (smoke + move) ===== */
+  #gate.transitioning .gate-options{ pointer-events:none; }
+  #gate.transitioning .gate-skip{ pointer-events:none; opacity:0; }
+  #gate.transitioning .gate-content > p,
+  #gate.transitioning .gate-content h1,
+  #gate.transitioning .gate-content .logo{ transition:opacity .4s ease; opacity:0; }
+  .gate-option{ transition:border-color .25s ease, transform .55s cubic-bezier(.3,.8,.4,1), opacity .55s ease, filter .55s ease; }
+  .gate-option.chosen{
+    transform:scale(1.08) translateY(-6px);
+    opacity:0; filter:blur(10px) brightness(1.6);
+  }
+  .gate-option.not-chosen{ opacity:0; }
+  .gate-option.not-chosen.genie{ transform:translateX(-70px) rotate(-3deg); }
+  .gate-option.not-chosen.wisher{ transform:translateX(70px) rotate(3deg); }
+
+  .smoke-puff{
+    position:fixed; z-index:1005; border-radius:50%; pointer-events:none;
+    background:radial-gradient(circle, rgba(255,255,255,.95) 0%, rgba(200,170,255,.55) 35%, rgba(168,116,255,.15) 65%, transparent 75%);
+    animation:smoke-rise 1.15s ease-out forwards;
+    will-change:transform, opacity;
+  }
+  @keyframes smoke-rise{
+    0%{ transform:translate(0,0) scale(.25); opacity:.95; }
+    55%{ opacity:.55; }
+    100%{ transform:translate(var(--dx,0px), -140px) scale(2.6); opacity:0; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .smoke-puff{ animation:none; display:none; }
+    .gate-option{ transition:opacity .3s ease; }
+    .gate-option.chosen, .gate-option.not-chosen{ transform:none; }
+  }
 </style>
 </head>
 <body>
@@ -701,12 +862,24 @@
   </div>
 
   <div class="hero-visual" aria-hidden="true">
-    <div class="hv-tile t1"><span>Cosplay</span><div class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div></div>
-    <div class="hv-tile t2"><span>Fitness</span><div class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div></div>
-    <div class="hv-tile t3"><span>Art</span><div class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div></div>
-    <div class="hv-tile t4"><span>ASMR</span><div class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div></div>
-    <div class="hv-tile t5"><span>Lifestyle</span><div class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div></div>
-    <div class="hv-tile t6"><span>Coaching</span><div class="play"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div></div>
+    <div class="hv-tile t1" data-tile="1">
+      <svg class="scene-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="10" y="20" width="20" height="14" rx="2"/><path d="M14 20v-3a2 2 0 012-2h8a2 2 0 012 2v3"/><circle cx="16" cy="26" r="2.4"/><circle cx="24" cy="26" r="2.4"/><path d="M32 24h4a2 2 0 012 2v2a2 2 0 01-2 2h-4"/></svg>
+    </div>
+    <div class="hv-tile t2" data-tile="2">
+      <svg class="scene-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 34V16a3 3 0 013-3h6a3 3 0 013 3v6"/><path d="M18 22h12a4 4 0 014 4v8"/><path d="M6 26h30a4 4 0 014 4v4"/><path d="M6 34h36"/></svg>
+    </div>
+    <div class="hv-tile t3" data-tile="3">
+      <svg class="scene-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 28v-6a4 4 0 014-4h16a4 4 0 014 4v6"/><path d="M6 28h36v6a2 2 0 01-2 2H8a2 2 0 01-2-2v-6z"/><path d="M10 36v3M38 36v3"/></svg>
+    </div>
+    <div class="hv-tile t4" data-tile="4">
+      <svg class="scene-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 8v6M17 11l4 4M31 11l-4 4"/><circle cx="24" cy="26" r="10"/><path d="M24 20a6 6 0 016 6"/></svg>
+    </div>
+    <div class="hv-tile t5" data-tile="5">
+      <svg class="scene-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M24 10c5 3 5 9 0 12-5-3-5-9 0-12z"/><path d="M24 22v16M18 30c2 2 4 2 6 0M30 26c-2 2-4 2-6 0"/><path d="M12 38h24"/></svg>
+    </div>
+    <div class="hv-tile t6" data-tile="6">
+      <svg class="scene-icon" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 34V22a4 4 0 014-4h16a4 4 0 014 4v12"/><path d="M10 34h28v2a2 2 0 01-2 2H12a2 2 0 01-2-2v-2z"/><path d="M16 22v-2a2 2 0 012-2h12a2 2 0 012 2v2"/></svg>
+    </div>
   </div>
   </div>
 
@@ -939,11 +1112,68 @@
     <a href="#showcase">Genies</a>
     <a href="#faq">FAQ</a>
     <a href="https://geniesx.com/alt">geniesx.com</a>
+    <a href="#" id="adminOpenLink">Admin</a>
   </div>
   © GENIESX - YOUR WISH IS BECOMING A MARKETPLACE
 </footer>
 
-<a href="#join" class="float-bubble"><span class="float-bubble-dot"></span> Join free</a>
+<a href="#join" class="float-bubble" aria-label="Join free">
+  <svg class="lamp-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2.5 17.2c0-.9.8-1.7 1.8-1.7h1.6a5.3 5.3 0 0110-1.9c2.4.5 4.1 2.2 4.1 4v.4c0 .9-.8 1.7-1.8 1.7H4.3a1.8 1.8 0 01-1.8-1.7v-.8z" fill="currentColor"/>
+    <path d="M9 8.2c1.4-2.1 4.1-2.1 5.4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+    <circle cx="9.3" cy="5.6" r=".9" fill="currentColor" opacity=".85"/>
+  </svg>
+  <span class="lamp-spark"></span>
+  <span class="float-bubble-dot"></span>
+  <span class="fb-text">Join free</span>
+</a>
+
+<!-- ============ ADMIN OVERLAY ============ -->
+<div id="adminOverlay" class="admin-overlay">
+  <div class="admin-card">
+    <button class="admin-close" id="adminClose" aria-label="Close admin panel">&times;</button>
+
+    <div id="adminLogin">
+      <div class="admin-logo"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="white"/></svg></span><b>Genies<span>X</span></b></div>
+      <h2>Admin access</h2>
+      <p>Enter the site password to manage hero media.</p>
+      <input type="password" id="adminPassInput" class="admin-input" placeholder="Password" autocomplete="off">
+      <div class="admin-error" id="adminError">Incorrect password.</div>
+      <button class="btn-solid lg" id="adminLoginBtn" style="width:100%; justify-content:center; margin-top:6px;">Enter</button>
+    </div>
+
+    <div id="adminPanel" style="display:none;">
+      <div class="admin-panel-head">
+        <div class="admin-logo"><span class="mark"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" fill="white"/></svg></span><b>Genies<span>X</span></b> <span class="badge">Admin</span></div>
+      </div>
+      <h2>Hero media</h2>
+      <p>Upload a photo for each hero tile and/or replace the gate background video. Changes apply instantly on this page.</p>
+      <div class="admin-note">Saved in this browser only (not published to other visitors) - see note below the toolbar.</div>
+
+      <div class="admin-toolbar">
+        <button class="btn-ghost" id="adminClearAll" type="button">Clear all media</button>
+        <button class="btn-ghost" id="adminLogout" type="button">Log out</button>
+      </div>
+
+      <h3 class="admin-subhead">Background video</h3>
+      <div class="admin-video-row">
+        <div class="admin-video-preview" id="adminVideoPreview">
+          <video id="adminVideoTag" muted loop playsinline></video>
+          <span class="empty-hint" id="adminVideoEmptyHint">No video uploaded - using default</span>
+        </div>
+        <div class="admin-video-actions">
+          <label class="btn-solid" for="adminVideoInput">Upload video</label>
+          <button class="btn-ghost" id="adminVideoRemove" type="button" disabled>Remove</button>
+          <input type="file" id="adminVideoInput" accept="video/*">
+        </div>
+      </div>
+
+      <h3 class="admin-subhead">Hero tile photos</h3>
+      <div class="admin-grid" id="adminGrid"></div>
+    </div>
+  </div>
+</div>
+<div class="admin-toast" id="adminToast"></div>
 
 <script>
   // ---------- Scroll reveal ----------
@@ -1037,10 +1267,44 @@
     renderTicker(role);
   }
 
+  function spawnSmoke(cx, cy){
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduceMotion) return;
+    const count = 16;
+    for(let i=0;i<count;i++){
+      const puff = document.createElement('div');
+      puff.className = 'smoke-puff';
+      const size = 18 + Math.random()*30;
+      const angle = (Math.random()-.5) * 220;
+      const delay = Math.random()*180;
+      puff.style.width = size+'px';
+      puff.style.height = size+'px';
+      puff.style.left = (cx - size/2 + (Math.random()-.5)*60) + 'px';
+      puff.style.top = (cy - size/2 + (Math.random()-.5)*40) + 'px';
+      puff.style.setProperty('--dx', angle+'px');
+      puff.style.animationDelay = delay+'ms';
+      document.body.appendChild(puff);
+      setTimeout(()=> puff.remove(), 1500);
+    }
+  }
+
   document.querySelectorAll('[data-choose]').forEach(opt=>{
-    opt.addEventListener('click', ()=>{
-      setRole(opt.dataset.choose);
-      gate.classList.add('hidden');
+    opt.addEventListener('click', (e)=>{
+      if(gate.classList.contains('transitioning')) return;
+      gate.classList.add('transitioning');
+      const rect = opt.getBoundingClientRect();
+      spawnSmoke(rect.left + rect.width/2, rect.top + rect.height/2);
+      document.querySelectorAll('[data-choose]').forEach(other=>{
+        if(other === opt){
+          other.classList.add('chosen');
+        } else {
+          other.classList.add('not-chosen', other.dataset.choose);
+        }
+      });
+      setTimeout(()=>{
+        setRole(opt.dataset.choose);
+        gate.classList.add('hidden');
+      }, 620);
     });
   });
   gateSkip.addEventListener('click', ()=>{
@@ -1069,6 +1333,322 @@
       window.scrollTo({ top:0, behavior:'smooth' });
     });
   });
+
+  // ---------- Load hero tile images (set via admin panel) ----------
+  (function(){
+    try{
+      document.querySelectorAll('.hv-tile[data-tile]').forEach(tile=>{
+        const key = 'gx_tile_' + tile.dataset.tile;
+        const data = localStorage.getItem(key);
+        if(data){
+          tile.style.backgroundImage = `url(${data})`;
+          tile.classList.add('has-image');
+        }
+      });
+    }catch(e){ /* localStorage unavailable - tiles stay on icon fallback */ }
+  })();
+
+  // ---------- IndexedDB helper (used for the background video) ----------
+  const GX_DB_NAME = 'gx_admin_media';
+  const GX_STORE = 'media';
+  function gxOpenDB(){
+    return new Promise((resolve, reject)=>{
+      if(!('indexedDB' in window)){ reject(new Error('indexedDB unavailable')); return; }
+      const req = indexedDB.open(GX_DB_NAME, 1);
+      req.onupgradeneeded = ()=>{ req.result.createObjectStore(GX_STORE); };
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  async function gxIdbSet(key, value){
+    const db = await gxOpenDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(GX_STORE, 'readwrite');
+      tx.objectStore(GX_STORE).put(value, key);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+  async function gxIdbGet(key){
+    const db = await gxOpenDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(GX_STORE, 'readonly');
+      const req = tx.objectStore(GX_STORE).get(key);
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+  async function gxIdbDelete(key){
+    const db = await gxOpenDB();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(GX_STORE, 'readwrite');
+      tx.objectStore(GX_STORE).delete(key);
+      tx.oncomplete = ()=> resolve();
+      tx.onerror = ()=> reject(tx.error);
+    });
+  }
+
+  // ---------- Apply a stored video (if any) to the live gate video ----------
+  async function gxApplyStoredVideo(){
+    try{
+      const blob = await gxIdbGet('gate_video');
+      if(blob){
+        const url = URL.createObjectURL(blob);
+        const gateVideoEl = document.getElementById('gate-video');
+        gateVideoEl.querySelector('source').src = url;
+        gateVideoEl.load();
+        gateVideoEl.play().catch(()=>{});
+        return url;
+      }
+    }catch(e){ /* indexedDB unavailable or empty - default video stays */ }
+    return null;
+  }
+  gxApplyStoredVideo();
+
+  // ================= ADMIN PANEL =================
+  (function(){
+    const ADMIN_PASSWORD = '12345';
+    const TILES = [
+      { id:1, tall:true }, { id:2, tall:false }, { id:3, tall:false },
+      { id:4, tall:false }, { id:5, tall:true }, { id:6, tall:false }
+    ];
+    const MAX_DIM = 900;
+    const JPEG_QUALITY = 0.82;
+
+    const overlay = document.getElementById('adminOverlay');
+    const openLink = document.getElementById('adminOpenLink');
+    const closeBtn = document.getElementById('adminClose');
+    const loginView = document.getElementById('adminLogin');
+    const panelView = document.getElementById('adminPanel');
+    const passInput = document.getElementById('adminPassInput');
+    const loginBtn = document.getElementById('adminLoginBtn');
+    const errorMsg = document.getElementById('adminError');
+    const logoutBtn = document.getElementById('adminLogout');
+    const clearAllBtn = document.getElementById('adminClearAll');
+    const adminGrid = document.getElementById('adminGrid');
+    const adminToast = document.getElementById('adminToast');
+
+    const videoInput = document.getElementById('adminVideoInput');
+    const videoPreviewWrap = document.getElementById('adminVideoPreview');
+    const videoTag = document.getElementById('adminVideoTag');
+    const videoEmptyHint = document.getElementById('adminVideoEmptyHint');
+    const videoRemoveBtn = document.getElementById('adminVideoRemove');
+
+    function toast(msg){
+      adminToast.textContent = msg;
+      adminToast.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=> adminToast.classList.remove('show'), 2200);
+    }
+
+    function openOverlay(){
+      overlay.classList.add('open');
+      const unlocked = sessionStorage.getItem('gx_admin_unlocked') === '1';
+      if(unlocked){ showPanel(); } else { showLogin(); }
+    }
+    function closeOverlay(){ overlay.classList.remove('open'); }
+    function showLogin(){
+      loginView.style.display = 'block';
+      panelView.style.display = 'none';
+      errorMsg.classList.remove('show');
+      passInput.value = '';
+      setTimeout(()=> passInput.focus(), 50);
+    }
+    function showPanel(){
+      loginView.style.display = 'none';
+      panelView.style.display = 'block';
+      refreshVideoPreview();
+    }
+
+    openLink.addEventListener('click', (e)=>{ e.preventDefault(); openOverlay(); });
+    closeBtn.addEventListener('click', closeOverlay);
+    overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeOverlay(); });
+
+    function tryLogin(){
+      if(passInput.value === ADMIN_PASSWORD){
+        sessionStorage.setItem('gx_admin_unlocked', '1');
+        showPanel();
+      } else {
+        errorMsg.classList.add('show');
+      }
+    }
+    loginBtn.addEventListener('click', tryLogin);
+    passInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') tryLogin(); });
+
+    logoutBtn.addEventListener('click', ()=>{
+      sessionStorage.removeItem('gx_admin_unlocked');
+      showLogin();
+    });
+
+    // ---- Image tile grid ----
+    function resizeImage(file){
+      return new Promise((resolve, reject)=>{
+        const reader = new FileReader();
+        reader.onerror = ()=> reject(new Error('read failed'));
+        reader.onload = ()=>{
+          const img = new Image();
+          img.onerror = ()=> reject(new Error('decode failed'));
+          img.onload = ()=>{
+            let { width, height } = img;
+            if(width > MAX_DIM || height > MAX_DIM){
+              const scale = MAX_DIM / Math.max(width, height);
+              width = Math.round(width * scale);
+              height = Math.round(height * scale);
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function tileKey(id){ return 'gx_tile_' + id; }
+
+    function applyTileToHomepage(id, dataUrl){
+      const el = document.querySelector(`.hv-tile[data-tile="${id}"]`);
+      if(!el) return;
+      if(dataUrl){
+        el.style.backgroundImage = `url(${dataUrl})`;
+        el.classList.add('has-image');
+      } else {
+        el.style.backgroundImage = '';
+        el.classList.remove('has-image');
+      }
+    }
+
+    function renderTileSlot(tile){
+      const slot = document.createElement('div');
+      slot.className = 'admin-slot';
+      slot.dataset.tall = tile.tall ? '1' : '0';
+      slot.innerHTML = `
+        <div class="admin-slot-head"><span>Tile ${tile.id}</span><span>${tile.tall ? 'PORTRAIT' : 'SQUARE'}</span></div>
+        <div class="admin-preview" id="aPreview-${tile.id}"><span class="empty-hint">No image</span></div>
+        <div class="admin-slot-actions">
+          <label class="a-upload" for="aFile-${tile.id}">Upload</label>
+          <button class="a-remove" id="aRemove-${tile.id}" type="button" disabled>Remove</button>
+        </div>
+        <input type="file" id="aFile-${tile.id}" accept="image/*">
+      `;
+      adminGrid.appendChild(slot);
+
+      const preview = slot.querySelector(`#aPreview-${tile.id}`);
+      const removeBtn = slot.querySelector(`#aRemove-${tile.id}`);
+      const fileInput = slot.querySelector(`#aFile-${tile.id}`);
+
+      function refresh(){
+        let data = null;
+        try{ data = localStorage.getItem(tileKey(tile.id)); }catch(e){}
+        if(data){
+          preview.style.backgroundImage = `url(${data})`;
+          preview.classList.add('has-image');
+          removeBtn.disabled = false;
+        } else {
+          preview.style.backgroundImage = '';
+          preview.classList.remove('has-image');
+          removeBtn.disabled = true;
+        }
+      }
+
+      fileInput.addEventListener('change', async ()=>{
+        const file = fileInput.files[0];
+        if(!file) return;
+        if(!file.type.startsWith('image/')){ toast('Please choose an image file'); return; }
+        try{
+          const dataUrl = await resizeImage(file);
+          try{
+            localStorage.setItem(tileKey(tile.id), dataUrl);
+          }catch(e){
+            toast('Storage full - try a smaller image');
+            return;
+          }
+          refresh();
+          applyTileToHomepage(tile.id, dataUrl);
+          toast(`Tile ${tile.id} updated`);
+        }catch(e){
+          toast('Could not process that image');
+        }
+        fileInput.value = '';
+      });
+
+      removeBtn.addEventListener('click', ()=>{
+        try{ localStorage.removeItem(tileKey(tile.id)); }catch(e){}
+        refresh();
+        applyTileToHomepage(tile.id, null);
+        toast(`Tile ${tile.id} cleared`);
+      });
+
+      refresh();
+    }
+    TILES.forEach(renderTileSlot);
+
+    // ---- Video upload ----
+    let currentVideoUrl = null;
+    async function refreshVideoPreview(){
+      try{
+        const blob = await gxIdbGet('gate_video');
+        if(blob){
+          if(currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
+          currentVideoUrl = URL.createObjectURL(blob);
+          videoTag.src = currentVideoUrl;
+          videoTag.play().catch(()=>{});
+          videoPreviewWrap.classList.add('has-video');
+          videoRemoveBtn.disabled = false;
+        } else {
+          videoTag.removeAttribute('src');
+          videoPreviewWrap.classList.remove('has-video');
+          videoRemoveBtn.disabled = true;
+        }
+      }catch(e){
+        videoEmptyHint.textContent = 'Video storage unavailable in this browser';
+      }
+    }
+
+    videoInput.addEventListener('change', async ()=>{
+      const file = videoInput.files[0];
+      if(!file) return;
+      if(!file.type.startsWith('video/')){ toast('Please choose a video file'); return; }
+      try{
+        await gxIdbSet('gate_video', file);
+        await refreshVideoPreview();
+        await gxApplyStoredVideo();
+        toast('Background video updated');
+      }catch(e){
+        toast('Could not save that video');
+      }
+      videoInput.value = '';
+    });
+
+    videoRemoveBtn.addEventListener('click', async ()=>{
+      try{ await gxIdbDelete('gate_video'); }catch(e){}
+      await refreshVideoPreview();
+      const gateVideoEl = document.getElementById('gate-video');
+      gateVideoEl.querySelector('source').src = 'GeniesX_Hero_Background_Video.mp4';
+      gateVideoEl.load();
+      gateVideoEl.play().catch(()=>{});
+      toast('Video cleared - back to default');
+    });
+
+    clearAllBtn.addEventListener('click', async ()=>{
+      if(!confirm('Remove all uploaded tile images and the background video?')) return;
+      TILES.forEach(t=>{
+        try{ localStorage.removeItem(tileKey(t.id)); }catch(e){}
+        applyTileToHomepage(t.id, null);
+      });
+      adminGrid.querySelectorAll('.admin-preview').forEach(p=>{ p.style.backgroundImage=''; p.classList.remove('has-image'); });
+      adminGrid.querySelectorAll('.a-remove').forEach(b=> b.disabled = true);
+      try{ await gxIdbDelete('gate_video'); }catch(e){}
+      await refreshVideoPreview();
+      const gateVideoEl = document.getElementById('gate-video');
+      gateVideoEl.querySelector('source').src = 'GeniesX_Hero_Background_Video.mp4';
+      gateVideoEl.load();
+      gateVideoEl.play().catch(()=>{});
+      toast('All admin media cleared');
+    });
+  })();
 
   // ---------- Particle constellation (hero, restrained) ----------
   (function(){
