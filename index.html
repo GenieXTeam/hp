@@ -1339,21 +1339,32 @@
     });
   });
 
-  // ---------- Load hero tile images (set via admin panel) ----------
+  // ---------- Load hero tile images ----------
+  // Priority: 1) admin-uploaded override (this browser only) 2) static file in /media (works for every visitor) 3) icon fallback
   (function(){
-    try{
-      document.querySelectorAll('.hv-tile[data-tile]').forEach(tile=>{
-        const key = 'gx_tile_' + tile.dataset.tile;
-        const data = localStorage.getItem(key);
-        if(data){
-          tile.style.backgroundImage = `url(${data})`;
-          tile.style.backgroundSize = 'cover';
-          tile.style.backgroundPosition = 'center';
-          tile.style.backgroundRepeat = 'no-repeat';
-          tile.classList.add('has-image');
-        }
-      });
-    }catch(e){ /* localStorage unavailable - tiles stay on icon fallback */ }
+    function setTileImage(tile, url){
+      tile.style.backgroundImage = `url(${url})`;
+      tile.style.backgroundSize = 'cover';
+      tile.style.backgroundPosition = 'center';
+      tile.style.backgroundRepeat = 'no-repeat';
+      tile.classList.add('has-image');
+    }
+    document.querySelectorAll('.hv-tile[data-tile]').forEach(tile=>{
+      const id = tile.dataset.tile;
+      let overrideData = null;
+      try{ overrideData = localStorage.getItem('gx_tile_' + id); }catch(e){}
+      if(overrideData){
+        setTileImage(tile, overrideData);
+        return;
+      }
+      // No local override - try the static site asset (add tile-1.jpg ... tile-6.jpg
+      // to the same folder as this HTML file and it will show for every visitor).
+      const staticPath = `tile-${id}.jpg`;
+      const probe = new Image();
+      probe.onload = ()=> setTileImage(tile, staticPath);
+      probe.onerror = ()=>{ /* file not present yet - keep icon placeholder */ };
+      probe.src = staticPath;
+    });
   })();
 
   // ---------- IndexedDB helper (used for the background video, with localStorage fallback) ----------
