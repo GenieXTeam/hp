@@ -569,6 +569,8 @@
     background:rgba(168,116,255,.06); border:1px solid var(--border); border-radius:12px;
     padding:12px 16px; font-size:12.5px; color:var(--text-dim); line-height:1.6; margin-bottom:22px;
   }
+  .admin-hint-small{ font-size:12px; color:var(--text-faint); line-height:1.6; margin-top:10px; }
+  .admin-hint-small b{ color:var(--text-dim); }
   .admin-toolbar{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:30px; }
   .admin-subhead{ font-family:'Space Grotesk', sans-serif; font-size:15.5px; font-weight:600; margin:26px 0 14px; }
   .admin-video-row{ display:flex; gap:16px; flex-wrap:wrap; align-items:center; }
@@ -688,14 +690,15 @@
   #gate.hidden{ opacity:0; visibility:hidden; pointer-events:none; }
   #gate-video{
     position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
-    z-index:0; opacity:.55;
+    z-index:0; opacity:.9;
   }
   #gate-overlay{
     position:absolute; inset:0; z-index:1;
     background:
-      radial-gradient(ellipse 80% 60% at 50% 20%, rgba(8,5,13,.35), rgba(8,5,13,.88) 70%),
-      linear-gradient(180deg, rgba(8,5,13,.55) 0%, rgba(8,5,13,.75) 55%, rgba(8,5,13,.94) 100%);
+      radial-gradient(ellipse 95% 75% at 50% 32%, rgba(8,5,13,.15), rgba(8,5,13,.6) 72%),
+      linear-gradient(180deg, rgba(8,5,13,.25) 0%, rgba(8,5,13,.4) 45%, rgba(8,5,13,.8) 100%);
   }
+  .gate-content{ text-shadow:0 2px 18px rgba(0,0,0,.55); }
   #gate .glow-orb.a{ top:-160px; left:-160px; z-index:1; } #gate .glow-orb.b{ bottom:-160px; right:-160px; z-index:1; }
   .gate-content{ position:relative; z-index:2; max-width:820px; width:100%; }
   .gate-content .logo{ justify-content:center; margin-bottom:34px; font-size:22px; pointer-events:none; }
@@ -1164,9 +1167,11 @@
         <div class="admin-video-actions">
           <label class="btn-solid" for="adminVideoInput">Upload video</label>
           <button class="btn-ghost" id="adminVideoRemove" type="button" disabled>Remove</button>
+          <button class="btn-ghost" id="adminVideoPreviewGate" type="button">Preview in gate</button>
           <input type="file" id="adminVideoInput" accept="video/*">
         </div>
       </div>
+      <p class="admin-hint-small">The video only plays behind the "I'm a Genie / I'm a Wisher" screen - use <b>Preview in gate</b> to bring that screen back up and check it.</p>
 
       <h3 class="admin-subhead">Hero tile photos</h3>
       <div class="admin-grid" id="adminGrid"></div>
@@ -1342,22 +1347,30 @@
         const data = localStorage.getItem(key);
         if(data){
           tile.style.backgroundImage = `url(${data})`;
+          tile.style.backgroundSize = 'cover';
+          tile.style.backgroundPosition = 'center';
+          tile.style.backgroundRepeat = 'no-repeat';
           tile.classList.add('has-image');
         }
       });
     }catch(e){ /* localStorage unavailable - tiles stay on icon fallback */ }
   })();
 
-  // ---------- IndexedDB helper (used for the background video) ----------
+  // ---------- IndexedDB helper (used for the background video, with localStorage fallback) ----------
   const GX_DB_NAME = 'gx_admin_media';
   const GX_STORE = 'media';
+  const GX_VIDEO_FALLBACK_KEY = 'gx_gate_video_b64';
+  let gxIdbBroken = false;
   function gxOpenDB(){
     return new Promise((resolve, reject)=>{
-      if(!('indexedDB' in window)){ reject(new Error('indexedDB unavailable')); return; }
-      const req = indexedDB.open(GX_DB_NAME, 1);
+      if(!('indexedDB' in window) || gxIdbBroken){ reject(new Error('indexedDB unavailable')); return; }
+      let req;
+      try{ req = indexedDB.open(GX_DB_NAME, 1); }
+      catch(e){ gxIdbBroken = true; reject(e); return; }
       req.onupgradeneeded = ()=>{ req.result.createObjectStore(GX_STORE); };
       req.onsuccess = ()=> resolve(req.result);
-      req.onerror = ()=> reject(req.error);
+      req.onerror = ()=>{ gxIdbBroken = true; reject(req.error); };
+      req.onblocked = ()=>{ gxIdbBroken = true; reject(new Error('indexedDB blocked')); };
     });
   }
   async function gxIdbSet(key, value){
@@ -1387,23 +1400,70 @@
       tx.onerror = ()=> reject(tx.error);
     });
   }
+  function gxFileToDataURL(file){
+    return new Promise((resolve, reject)=>{
+      const reader = new FileReader();
+      reader.onload = ()=> resolve(reader.result);
+      reader.onerror = ()=> reject(new Error('read failed'));
+      reader.readAsDataURL(file);
+    });
+  }
+  // Save the video: try IndexedDB first (handles large files well); if that fails
+  // (e.g. blocked on a file:// page), fall back to a base64 copy in localStorage.
+  async function gxSaveVideo(file){
+    try{
+      await gxIdbSet('gate_video', file);
+      try{ localStorage.removeItem(GX_VIDEO_FALLBACK_KEY); }catch(e){}
+      return { ok:true, via:'indexeddb' };
+    }catch(e){
+      try{
+        const dataUrl = await gxFileToDataURL(file);
+        localStorage.setItem(GX_VIDEO_FALLBACK_KEY, dataUrl);
+        return { ok:true, via:'localstorage' };
+      }catch(e2){
+        return { ok:false, error:e2 };
+      }
+    }
+  }
+  async function gxLoadVideoSrc(){
+    try{
+      const blob = await gxIdbGet('gate_video');
+      if(blob) return { src: URL.createObjectURL(blob), type: blob.type || '' };
+    }catch(e){ /* fall through to localStorage */ }
+    try{
+      const dataUrl = localStorage.getItem(GX_VIDEO_FALLBACK_KEY);
+      if(dataUrl){
+        const m = /^data:([^;]+);/.exec(dataUrl);
+        return { src: dataUrl, type: m ? m[1] : '' };
+      }
+    }catch(e){ /* no storage available at all */ }
+    return null;
+  }
+  async function gxClearVideo(){
+    try{ await gxIdbDelete('gate_video'); }catch(e){}
+    try{ localStorage.removeItem(GX_VIDEO_FALLBACK_KEY); }catch(e){}
+  }
 
   // ---------- Apply a stored video (if any) to the live gate video ----------
   async function gxApplyStoredVideo(){
-    try{
-      const blob = await gxIdbGet('gate_video');
-      if(blob){
-        const url = URL.createObjectURL(blob);
-        const gateVideoEl = document.getElementById('gate-video');
-        gateVideoEl.querySelector('source').src = url;
-        gateVideoEl.load();
-        gateVideoEl.play().catch(()=>{});
-        return url;
-      }
-    }catch(e){ /* indexedDB unavailable or empty - default video stays */ }
+    const result = await gxLoadVideoSrc();
+    if(result){
+      const gateVideoEl = document.getElementById('gate-video');
+      const sourceEl = gateVideoEl.querySelector('source');
+      sourceEl.src = result.src;
+      sourceEl.type = result.type || 'video/mp4';
+      gateVideoEl.load();
+      gateVideoEl.play().catch(err=> console.warn('GeniesX: gate video play() blocked or failed:', err));
+      return result.src;
+    }
     return null;
   }
   gxApplyStoredVideo();
+  document.getElementById('gate-video').addEventListener('error', ()=>{
+    const el = document.getElementById('gate-video');
+    const err = el.error;
+    console.error('GeniesX: gate video failed to load.', err ? `code ${err.code}` : el.querySelector('source').src);
+  });
 
   // ================= ADMIN PANEL =================
   (function(){
@@ -1433,6 +1493,7 @@
     const videoTag = document.getElementById('adminVideoTag');
     const videoEmptyHint = document.getElementById('adminVideoEmptyHint');
     const videoRemoveBtn = document.getElementById('adminVideoRemove');
+    const videoPreviewGateBtn = document.getElementById('adminVideoPreviewGate');
 
     function toast(msg){
       adminToast.textContent = msg;
@@ -1513,9 +1574,15 @@
       if(!el) return;
       if(dataUrl){
         el.style.backgroundImage = `url(${dataUrl})`;
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+        el.style.backgroundRepeat = 'no-repeat';
         el.classList.add('has-image');
       } else {
         el.style.backgroundImage = '';
+        el.style.backgroundSize = '';
+        el.style.backgroundPosition = '';
+        el.style.backgroundRepeat = '';
         el.classList.remove('has-image');
       }
     }
@@ -1588,48 +1655,54 @@
     // ---- Video upload ----
     let currentVideoUrl = null;
     async function refreshVideoPreview(){
-      try{
-        const blob = await gxIdbGet('gate_video');
-        if(blob){
-          if(currentVideoUrl) URL.revokeObjectURL(currentVideoUrl);
-          currentVideoUrl = URL.createObjectURL(blob);
-          videoTag.src = currentVideoUrl;
-          videoTag.play().catch(()=>{});
-          videoPreviewWrap.classList.add('has-video');
-          videoRemoveBtn.disabled = false;
-        } else {
-          videoTag.removeAttribute('src');
-          videoPreviewWrap.classList.remove('has-video');
-          videoRemoveBtn.disabled = true;
-        }
-      }catch(e){
-        videoEmptyHint.textContent = 'Video storage unavailable in this browser';
+      const result = await gxLoadVideoSrc();
+      if(currentVideoUrl && currentVideoUrl.startsWith('blob:')) URL.revokeObjectURL(currentVideoUrl);
+      currentVideoUrl = result ? result.src : null;
+      if(result){
+        videoTag.src = result.src;
+        videoTag.play().catch(err=> console.warn('GeniesX admin: preview play() blocked or failed:', err));
+        videoPreviewWrap.classList.add('has-video');
+        videoRemoveBtn.disabled = false;
+      } else {
+        videoTag.removeAttribute('src');
+        videoPreviewWrap.classList.remove('has-video');
+        videoRemoveBtn.disabled = true;
       }
     }
+    videoTag.addEventListener('error', ()=>{
+      const err = videoTag.error;
+      console.error('GeniesX admin: preview video failed to decode/play.', err ? `code ${err.code}` : '');
+      toast('This browser could not play that video file');
+    });
 
     videoInput.addEventListener('change', async ()=>{
       const file = videoInput.files[0];
       if(!file) return;
       if(!file.type.startsWith('video/')){ toast('Please choose a video file'); return; }
-      try{
-        await gxIdbSet('gate_video', file);
+      const result = await gxSaveVideo(file);
+      if(result.ok){
         await refreshVideoPreview();
         await gxApplyStoredVideo();
         toast('Background video updated');
-      }catch(e){
-        toast('Could not save that video');
+      } else {
+        toast('Could not save that video - try a smaller file');
       }
       videoInput.value = '';
     });
 
     videoRemoveBtn.addEventListener('click', async ()=>{
-      try{ await gxIdbDelete('gate_video'); }catch(e){}
+      await gxClearVideo();
       await refreshVideoPreview();
       const gateVideoEl = document.getElementById('gate-video');
       gateVideoEl.querySelector('source').src = 'GeniesX_Hero_Background_Video.mp4';
       gateVideoEl.load();
       gateVideoEl.play().catch(()=>{});
       toast('Video cleared - back to default');
+    });
+
+    videoPreviewGateBtn.addEventListener('click', ()=>{
+      closeOverlay();
+      document.getElementById('gate').classList.remove('hidden');
     });
 
     clearAllBtn.addEventListener('click', async ()=>{
@@ -1640,7 +1713,7 @@
       });
       adminGrid.querySelectorAll('.admin-preview').forEach(p=>{ p.style.backgroundImage=''; p.classList.remove('has-image'); });
       adminGrid.querySelectorAll('.a-remove').forEach(b=> b.disabled = true);
-      try{ await gxIdbDelete('gate_video'); }catch(e){}
+      await gxClearVideo();
       await refreshVideoPreview();
       const gateVideoEl = document.getElementById('gate-video');
       gateVideoEl.querySelector('source').src = 'GeniesX_Hero_Background_Video.mp4';
